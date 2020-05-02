@@ -275,6 +275,7 @@ void SpazerAudioProcessorEditor::valueChanged(Value &value){
     }
     if(delayRightNoteLength.getSelectedId() != 0){
         delayRightMs.setValue((noteLengths[delayRightNoteLength.getSelectedId() - 1])*1000.0);
+        
     }
 }
 

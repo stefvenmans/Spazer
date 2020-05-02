@@ -144,8 +144,6 @@ bool SpazerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) c
 
 void SpazerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
-   
-    auto oscBuff = LFO1.getProcessedBlock(buffer.getNumSamples(), SINE);
     
     //auto delayBuffer = delayLeft.processAudioBlock(buffer, oscBuff[0]);
     //buffer.clear();
