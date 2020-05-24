@@ -21,14 +21,38 @@ SpazerAudioProcessor::SpazerAudioProcessor()
                       #endif
                        .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), mAPVTS(*this, nullptr, Identifier("SpazerParameters"),createParameterLayout())
 #endif
 {
+    mAPVTS.state.addListener(this);
+    mAPVTS.addParameterListener("delayLeftMs", this);
+    mAPVTS.addParameterListener("delayLeftFb", this);
+    mAPVTS.addParameterListener("delayLeftWet", this);
+    mAPVTS.addParameterListener("delayLeftFilter", this);
+    mAPVTS.addParameterListener("delayRightMs", this);
+    mAPVTS.addParameterListener("delayRightFb", this);
+    mAPVTS.addParameterListener("delayRightWet", this);
+    mAPVTS.addParameterListener("delayLeftNoteLength", this);
+    mAPVTS.addParameterListener("delayRightNoteLength", this);
+    mAPVTS.addParameterListener("delayRightFilter", this);
+    mAPVTS.addParameterListener("reverbLeftDry", this);
+    mAPVTS.addParameterListener("reverbLeftWet", this);
+    mAPVTS.addParameterListener("reverbRightDry", this);
+    mAPVTS.addParameterListener("reverbRightWet", this);
+    mAPVTS.addParameterListener("reverbPreDelay", this);
+    mAPVTS.addParameterListener("reverbBandwidth", this);
+    mAPVTS.addParameterListener("reverbDecay", this);
+    mAPVTS.addParameterListener("reverbDamping", this);
+    mAPVTS.addParameterListener("reverbReverbTime", this);
+    mAPVTS.addParameterListener("reverbAPFModulation", this);
+    
+    bpmOfDAW = 120.0f;
     
 }
 
 SpazerAudioProcessor::~SpazerAudioProcessor()
 {
+    
 }
 
 //==============================================================================
@@ -91,6 +115,7 @@ const String SpazerAudioProcessor::getProgramName (int index)
 
 void SpazerAudioProcessor::changeProgramName (int index, const String& newName)
 {
+    
 }
 
 //==============================================================================
@@ -98,18 +123,12 @@ void SpazerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    delayLeft.setParameters(70, 50, 600, 2, sampleRate);
-    delayLeft.setFeedbackFilter(IIRCoefficients::makeLowPass(sampleRate, 100));
-    delayRight.setParameters(50, 50, 200, 2, sampleRate);
-    delayRight.setFeedbackFilter(IIRCoefficients::makeLowPass(sampleRate, 1500));
-    //filter.setCoefficients(IIRCoefficients::makeLowPass(44100,6000,1));
     
-    LFO1.setFrequency(0.2, sampleRate);
-    
-    AudioPlayHead::CurrentPositionInfo result;
-    getPlayHead()->getCurrentPosition(result);
-    std::cout << result.bpm << std::endl;
-  
+    schroederReverb = new SchroederReverb{(int)sampleRate, mAPVTS.getParameter("reverbLeftDry")->getValue(), mAPVTS.getParameter("reverbLeftWet")->getValue()};
+    moorerReverb = new MoorerReverb{(int)sampleRate, mAPVTS.getParameter("reverbLeftDry")->getValue(), mAPVTS.getParameter("reverbLeftWet")->getValue()};
+    plateReverb = new DattorroPlateReverb{(int)sampleRate, mAPVTS.getParameter("reverbLeftDry")->getValue(), mAPVTS.getParameter("reverbLeftWet")->getValue(), mAPVTS.getParameter("reverbRightDry")->getValue(), mAPVTS.getParameter("reverbRightWet")->getValue()};
+    stereoDelay = new StereoDelay{(int)sampleRate, 2.0f, mAPVTS.getParameter("delayLeftMs")->getValue()*2.0f, mAPVTS.getParameter("delayLeftFb")->getValue(), mAPVTS.getParameter("delayLeftFilter")->getValue(), mAPVTS.getParameter("delayLeftWet")->getValue()};
+    updateNoteLengths();
 }
 
 void SpazerAudioProcessor::releaseResources()
@@ -144,42 +163,31 @@ bool SpazerAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) c
 
 void SpazerAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
-    
-    //auto delayBuffer = delayLeft.processAudioBlock(buffer, oscBuff[0]);
-    //buffer.clear();
-    //auto writePointer = buffer.getWritePointer(0);
-//    for(int i=0; i<buffer.getNumSamples();i++){
-//        writePointer[i] = delayBuffer[i];
-//    }
-    //buffer.clear();
-    
-    
-    delayLeft.processAudioBlock(buffer, 0);
-    delayRight.processAudioBlock(buffer, 1);
-    
-    
-    MidiBuffer processedMidi;
-    int time;
-    MidiMessage m;
- 
-    for (MidiBuffer::Iterator i (midiMessages); i.getNextEvent (m, time);)
-    {
-        std::cout << m.getTempoSecondsPerQuarterNote() << std::endl;
-        
-        std::cout << m.getTempoSecondsPerQuarterNote() << "tempo" << std::endl;
+    AudioBuffer<float> processIn;
+    processIn.makeCopyOf(buffer);
+    stereoDelay->processBuffer(buffer);
+    if(mAPVTS.getParameter("reverbType")->getValue() == 0){
+        schroederReverb->processBlock(buffer);
+    }
+    else if(mAPVTS.getParameter("reverbType")->getValue() == 0.5){
+        moorerReverb->processBlock(buffer);
+    }
+    else if(mAPVTS.getParameter("reverbType")->getValue() == 1){
+        plateReverb->processBlock(buffer);
     }
     
     AudioPlayHead::CurrentPositionInfo result;
     getPlayHead()->getCurrentPosition(result);
-    if(result.bpm != (double)tempoOfDaw.getValue()){
-        tempoOfDaw.setValue(result.bpm);
+    if(result.bpm != bpmOfDAW){
+        bpmOfDAW = result.bpm;
+        updateNoteLengths();
+        if(mAPVTS.getParameter("delayLeftNoteLength")->getValue() != 0){
+            mAPVTS.getParameter("delayLeftMs")->setValueNotifyingHost((noteLengths[mAPVTS.getParameter("delayLeftNoteLength")->getValue()*9])/2.0f);
+        }
+        if(mAPVTS.getParameter("delayRightNoteLength")->getValue() != 0){
+            mAPVTS.getParameter("delayRightMs")->setValueNotifyingHost((noteLengths[mAPVTS.getParameter("delayRightNoteLength")->getValue()*9])/2.0f);
+        }
     }
-    
-    //filter.processSamples(writePointer, buffer.getNumSamples());
-//    auto oscBuff = LFO1.getProcessedBlock(buffer.getNumSamples(), TRIANGLE);
-//    for(int i=0; i<buffer.getNumSamples();i++){
-//        writePointer[i] = oscBuff[0][i];
-//    }
 }
 
 //==============================================================================
@@ -196,15 +204,123 @@ AudioProcessorEditor* SpazerAudioProcessor::createEditor()
 //==============================================================================
 void SpazerAudioProcessor::getStateInformation (MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+//    Array<float> userData;
+//    userData.add(1.0);
+//    MemoryOutputStream(destData,true).write((void*)&userData, sizeof(userData));
+//    std::cout << "size of cpp : " << sizeof(userData) << std::endl;
+//    std::cout << "size of juce : " << userData.size() << std::endl;
 }
 
 void SpazerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+//    Array<float> userData;
+//    std::cout << "number of bytes : " << sizeInBytes << std::endl;
+//    MemoryInputStream(data,static_cast<size_t>(sizeInBytes), false).read((void*)&userData, sizeInBytes);
+//    std::cout << "saved value: " << userData.getFirst() << std::endl;
+}
+
+//Callback from value tree
+void SpazerAudioProcessor::valueTreePropertyChanged(ValueTree &treeWhosePropertyHasChanged, const Identifier &property)
+{
+    //std::cout << "value changed " << mAPVTS.getParameter(property)->getValue() << std::endl;
+}
+
+//Parameter callback from valuetree
+void SpazerAudioProcessor::parameterChanged(const String &parameterID, float newValue){
+    if(!parameterID.compare("delayLeftMs")){
+        stereoDelay->setDelay(0, newValue/1000.0f);
+    }
+    else if(!parameterID.compare("delayRightMs")){
+        stereoDelay->setDelay(1, newValue/1000.0f);
+    }
+    else if(!parameterID.compare("delayLeftFb")){
+        stereoDelay->setFeedback(0, newValue/100.0f);
+    }
+    else if(!parameterID.compare("delayRightFb")){
+        stereoDelay->setFeedback(1, newValue/100.0f);
+    }
+    else if(!parameterID.compare("delayLeftWet")){
+        stereoDelay->setWetGain(0, newValue/100.0f);
+    }
+    else if(!parameterID.compare("delayRightWet")){
+        stereoDelay->setWetGain(1, newValue/100.0f);
+    }
+    else if(!parameterID.compare("delayLeftFilter")){
+        stereoDelay->setBandwidth(0, newValue);
+    }
+    else if(!parameterID.compare("delayRightFilter")){
+        stereoDelay->setBandwidth(1, newValue);
+    }
+    else if(!parameterID.compare("delayLeftNoteLength")){
+        mAPVTS.getParameter("delayLeftMs")->setValueNotifyingHost((noteLengths[(int)newValue]/2.0f));
+    }
+    else if(!parameterID.compare("delayRightNoteLength")){
+        mAPVTS.getParameter("delayRightMs")->setValueNotifyingHost((noteLengths[newValue])/2.0f);
+    }
+    else if(!parameterID.compare("reverbLeftDry")){
+        schroederReverb->setDryGain(newValue);
+        moorerReverb->setDryGain(newValue);
+        plateReverb->setDryGainLeft(newValue);
+    }
+    else if(!parameterID.compare("reverbLeftWet")){
+        schroederReverb->setWetGain(newValue);
+        moorerReverb->setWetGain(newValue);
+        plateReverb->setWetGainLeft(newValue);
+    }
+    else if(!parameterID.compare("reverbRightDry")){
+        plateReverb->setDryGainRight(newValue);
+    }
+    else if(!parameterID.compare("reverbRightWet")){
+        plateReverb->setWetGainRight(newValue);
+    }
+    else if(!parameterID.compare("reverbPreDelay")){
+        plateReverb->setPreDelay(newValue);
+    }
+    else if(!parameterID.compare("reverbBandwidth")){
+        plateReverb->setBandwidth(newValue);
+    }
+    else if(!parameterID.compare("reverbDecay")){
+        plateReverb->setDecay(newValue);
+    }
+    else if(!parameterID.compare("reverbDamping")){
+        plateReverb->setDamping(newValue);
+     }
+    else if(!parameterID.compare("reverbReverbTime")){
+        schroederReverb->setReverbTime(newValue);
+        moorerReverb->setReverbTime(newValue);
+    }
+    else if(!parameterID.compare("reverbAPFModulation")){
+        plateReverb->setAllPassModulationState((bool)newValue);
+    }
+}
+
+AudioProcessorValueTreeState::ParameterLayout SpazerAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<RangedAudioParameter>> params;
+    
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayLeftMs","Delay Left", 0.0f, 2000.0f, 1000.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayLeftFb", "Feedback Left", 0.0f, 100.0f, 25.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayLeftWet", "Dry/Wet Left", 0.0f, 100.0f, 25.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayLeftFilter", "Filter Left", 0.0f, 20000.0f, 20000.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayRightMs", "Delay Right", 0.0f, 2000.0f, 500.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayRightFb", "Feedback Right", 0.0f, 100.0f, 15.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayRightWet", "Dry/Wet Right", 0.0f, 100.0f, 15.0f));
+    params.push_back (std::make_unique<AudioParameterFloat> ("delayRightFilter", "Filter Right", 0.0f, 20000.0f, 20000.0f));
+    params.push_back (std::make_unique<AudioParameterChoice>("delayLeftNoteLength","Note Length Left",StringArray("1/2d","1/2","1/4d","1/4","1/8d","1/8","1/16d","1/16","1/32d","1/32"),1));
+    params.push_back (std::make_unique<AudioParameterChoice>("delayRightNoteLength","Note Length Right",StringArray("1/2d","1/2","1/4d","1/4","1/8d","1/8","1/16d","1/16","1/32d","1/32"),1));
+    params.push_back(std::make_unique<AudioParameterChoice>("reverbType", "Reverb Type", StringArray("Schroeder Reverb","Moorer Reverb", "Dattorro Plate Reverb"), 2));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbLeftDry", "Reverb Left Dry", 0.0f, 100.0f, 90.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbLeftWet", "Reverb Left Wet", 0.0f, 100.0f, 10.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbRightDry", "Reverb Right Dry", 0.0f, 100.0f, 90.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbRightWet", "Reverb Right Wet", 0.0f, 100.0f, 10.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbPreDelay", "Reverb Pre-Delay", 0.0f, 100.0f, 20.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbBandwidth", "Reverb Bandwidth", 0.0f, 20000.0f, 19990.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbDecay", "Reverb Decay", 0.0f, 100.0f, 50.0f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbDamping", "Reverb Damping", 0.0f, 100.0f, 0.05f));
+    params.push_back(std::make_unique<AudioParameterFloat>("reverbReverbTime", "Reverb Time", 0.0f, 10.0f, 1.0f));
+    params.push_back(std::make_unique<AudioParameterBool>("reverbAPFModulation", "Reverb APF Modulation", false));
+    
+    return { params.begin(), params.end() };
 }
 
 //==============================================================================
@@ -212,4 +328,20 @@ void SpazerAudioProcessor::setStateInformation (const void* data, int sizeInByte
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new SpazerAudioProcessor();
+}
+
+void SpazerAudioProcessor::updateNoteLengths()
+{
+    auto fullNote = (60.0/((double)bpmOfDAW))*4.0;
+    noteLengths.clear();
+    noteLengths.push_back((fullNote/2.0)+(fullNote/4.0));
+    noteLengths.push_back((fullNote/2.0));
+    noteLengths.push_back((fullNote/4.0)+(fullNote/8.0));
+    noteLengths.push_back((fullNote/4.0));
+    noteLengths.push_back((fullNote/8.0)+(fullNote/16.0));
+    noteLengths.push_back((fullNote/8.0));
+    noteLengths.push_back((fullNote/16.0)+(fullNote/32.0));
+    noteLengths.push_back((fullNote/16.0));
+    noteLengths.push_back((fullNote/32.0) +(fullNote/64.0));
+    noteLengths.push_back((fullNote/32.0));
 }

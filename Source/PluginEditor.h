@@ -34,9 +34,7 @@ private:
 //==============================================================================
 /**
 */
-class SpazerAudioProcessorEditor  : public AudioProcessorEditor,
-                                    private Slider::Listener,
-                                    public Value::Listener
+class SpazerAudioProcessorEditor  : public AudioProcessorEditor
 {
 public:
     SpazerAudioProcessorEditor (SpazerAudioProcessor&);
@@ -45,14 +43,11 @@ public:
     //==============================================================================
     void paint (Graphics&) override;
     void resized() override;
-    void valueChanged(Value & value) override;
 
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     SpazerAudioProcessor& processor;
-    void sliderValueChanged (Slider* slider) override;
-    
     
     Slider delayLeftMs;
     Slider delayLeftFb;
@@ -63,6 +58,17 @@ private:
     Slider delayRightWet;
     Slider delayRightFilter;
     
+    Slider reverbLeftDrySlider;
+    Slider reverbLeftWetSlider;
+    Slider reverbRightDrySlider;
+    Slider reverbRightWetSlider;
+    Slider reverbPreDelaySlider;
+    Slider reverbBandwidthSlider;
+    Slider reverbDecaySlider;
+    Slider reverbDampingSlider;
+    Slider reverbReverbTimeSlider;
+    TextButton reverbAPFModulationButton;
+    
     Label delayLeftMsLabel;
     Label delayLeftFbLabel;
     Label delayLeftWetLabel;
@@ -72,16 +78,54 @@ private:
     Label delayRightWetLabel;
     Label delayRightFilterLabel;
     
+    Label reverbLeftDryLabel;
+    Label reverbLeftWetLabel;
+    Label reverbRightDryLabel;
+    Label reverbRightWetLabel;
+    Label reverbPreDelayLabel;
+    Label reverbBandwidthLabel;
+    Label reverbDecayLabel;
+    Label reverbDampingLabel;
+    Label reverbReverbTimeLabel;
+    Label reverbAPFModulationLabel;
+    
     ComboBox delayLeftNoteLength;
     ComboBox delayRightNoteLength;
+    ComboBox reverbTypeComboBox;
     BoxLookAndFeel newLandf;
     
     Array<float> noteLengths;
     bool userSetNoteLength;
     
     Label bpmTestLabel;
-
+    ComboBox testBox;
     
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayLeftMsAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayLeftFbAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayLeftWetAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayLeftFilterAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::ComboBoxAttachment> mDelayLeftNoteLengthAttachment;
+    
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayRightMsAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayRightFbAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayRightWetAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> mDelayRightFilterAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::ComboBoxAttachment> mDelayRightNoteLengthAttachment;
+    
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbLeftDryAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbLeftWetAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbRightDryAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbRightWetAttachment;
+    
+    std::unique_ptr<AudioProcessorValueTreeState::ComboBoxAttachment> reverbTypeAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbPreDelayAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbBandwidthAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbDecayAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbDampingAttachment;
+    std::unique_ptr<AudioProcessorValueTreeState::SliderAttachment> reverbReverbTimeAttachment;
+    
+    
+    std::unique_ptr<AudioProcessorValueTreeState::ButtonAttachment> reverbAPFModulationAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpazerAudioProcessorEditor)
 };

@@ -65,7 +65,7 @@ WTOscillator::~WTOscillator(){
     delete [] sawTable;
 }
 
-float ** WTOscillator::getProcessedBlock(int samplesPerBlock, waveType type){
+float ** WTOscillator::getBlock(int samplesPerBlock, waveType type){
     outBuffer = new float*[2];
     outBuffer[0] = new float[samplesPerBlock];
     outBuffer[1] = new float[samplesPerBlock];
@@ -140,6 +140,81 @@ float ** WTOscillator::getProcessedBlock(int samplesPerBlock, waveType type){
     return outBuffer;
 }
 
-void WTOscillator::setFrequency(float frequency, int sampleRate){
+float WTOscillator::getSample(waveType type)
+{
+    float y;
+    
+    int discreteReadIndex;
+    float fraction;
+    int readIndexNext;
+    
+    switch(type){
+        case SINE:
+            discreteReadIndex = (int)readIndex;
+            fraction = readIndex - discreteReadIndex;
+            readIndexNext = discreteReadIndex > tableSize ? 0 : discreteReadIndex + 1;
+            
+            // Linear interpolation y = (y0(x1-x)+y(x-x0))/x1-x0
+            y = (sineTable[discreteReadIndex]*(1-fraction)+sineTable[readIndexNext]*(fraction));
+            
+            readIndex += frequencyIncVal;
+            if(readIndex > tableSize){
+                readIndex = readIndex - tableSize;
+            }
+            
+            break;
+            
+        case TRIANGLE:
+            discreteReadIndex = (int)readIndex;
+            fraction = readIndex - discreteReadIndex;
+            readIndexNext = discreteReadIndex > tableSize ? 0 : discreteReadIndex + 1;
+            
+            // Linear interpolation y = (y0(x1-x)+y(x-x0))/x1-x0
+            y = (triangleTable[discreteReadIndex]*(1-fraction)+triangleTable[readIndexNext]*(fraction));
+            
+            readIndex += frequencyIncVal;
+            if(readIndex > tableSize){
+                readIndex = readIndex - tableSize;
+            }
+            
+            break;
+            
+        case SQUARE:
+            discreteReadIndex = (int)readIndex;
+            fraction = readIndex - discreteReadIndex;
+            readIndexNext = discreteReadIndex > tableSize ? 0 : discreteReadIndex + 1;
+            
+            // Linear interpolation y = (y0(x1-x)+y(x-x0))/x1-x0
+            y = (squareTable[discreteReadIndex]*(1-fraction)+squareTable[readIndexNext]*(fraction));
+            
+            readIndex += frequencyIncVal;
+            if(readIndex > tableSize){
+                readIndex = readIndex - tableSize;
+            }
+            
+            break;
+            
+        case SAW:
+            discreteReadIndex = (int)readIndex;
+            fraction = readIndex - discreteReadIndex;
+            readIndexNext = discreteReadIndex > tableSize ? 0 : discreteReadIndex + 1;
+            
+            // Linear interpolation y = (y0(x1-x)+y(x-x0))/x1-x0
+            y = (sawTable[discreteReadIndex]*(1-fraction)+sawTable[readIndexNext]*(fraction));
+            
+            readIndex += frequencyIncVal;
+            if(readIndex > tableSize){
+                readIndex = readIndex - tableSize;
+            }
+            
+            break;
+        default:
+            y = 0.0;
+    }
+    return y;
+}
+
+void WTOscillator::setFrequency(float frequency, int sampleRate)
+{
     frequencyIncVal = ((float)tableSize*frequency)/((float)sampleRate);
 }

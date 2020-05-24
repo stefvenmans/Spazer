@@ -18,7 +18,8 @@ public:
     WTOscillator(int size);
     ~WTOscillator();
     void resetReadIndex();
-    float ** getProcessedBlock(int samplesPerBlock, waveType type);
+    float ** getBlock(int samplesPerBlock, waveType type);
+    float getSample(waveType type);
     void setFrequency(float frequency, int sampleRate);
     
 private:

@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="Ade6PW" name="Spazer" projectType="audioplug" jucerVersion="5.4.7"
-              pluginAUMainType="'aumf'" pluginRTASCategory="16">
+<JUCERPROJECT id="Ade6PW" name="Spazer" projectType="audioplug" jucerVersion="5.4.7">
   <MAINGROUP id="ZJMhRN" name="Spazer">
     <GROUP id="{1A6EAE1F-C9AF-D876-D937-68766ED81A14}" name="Source">
+      <FILE id="lBHMvh" name="SchroederReverb.cpp" compile="1" resource="0"
+            file="Source/SchroederReverb.cpp"/>
+      <FILE id="xypFjn" name="SchroederReverb.h" compile="0" resource="0"
+            file="Source/SchroederReverb.h"/>
+      <FILE id="qtgP5A" name="ModularCircularBuffer.cpp" compile="1" resource="0"
+            file="Source/ModularCircularBuffer.cpp"/>
+      <FILE id="S88A9S" name="ModularCircularBuffer.h" compile="0" resource="0"
+            file="Source/ModularCircularBuffer.h"/>
+      <FILE id="m5YbDZ" name="CircularBuffer.cpp" compile="1" resource="0"
+            file="Source/CircularBuffer.cpp"/>
+      <FILE id="S7Ahbs" name="CircularBuffer.h" compile="0" resource="0"
+            file="Source/CircularBuffer.h"/>
+      <FILE id="FRWNwL" name="DattorroPlateReverb.cpp" compile="1" resource="0"
+            file="Source/DattorroPlateReverb.cpp"/>
+      <FILE id="UMnvBP" name="DattorroPlateReverb.h" compile="0" resource="0"
+            file="Source/DattorroPlateReverb.h"/>
+      <FILE id="VQQhAn" name="Filters.cpp" compile="1" resource="0" file="Source/Filters.cpp"/>
+      <FILE id="uQZIFf" name="Filters.h" compile="0" resource="0" file="Source/Filters.h"/>
+      <FILE id="qy3A0o" name="MoorerReverb.cpp" compile="1" resource="0"
+            file="Source/MoorerReverb.cpp"/>
+      <FILE id="qqLNMh" name="MoorerReverb.h" compile="0" resource="0" file="Source/MoorerReverb.h"/>
       <FILE id="zy1e3Q" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="Pzx3Py" name="PluginProcessor.h" compile="0" resource="0"
@@ -11,11 +31,11 @@
       <FILE id="nz5gSU" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="DEh9kA" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
-      <FILE id="f1rLoc" name="DDLModule.cpp" compile="1" resource="0" file="Source/DDLModule.cpp"/>
-      <FILE id="Cun7bh" name="DDLModule.h" compile="0" resource="0" file="Source/DDLModule.h"/>
       <FILE id="ewzako" name="WTOscillator.h" compile="0" resource="0" file="Source/WTOscillator.h"/>
       <FILE id="hkhHzX" name="WTOscillator.cpp" compile="1" resource="0"
             file="Source/WTOscillator.cpp"/>
+      <FILE id="gSgfxH" name="StereoDelay.cpp" compile="1" resource="0" file="Source/StereoDelay.cpp"/>
+      <FILE id="vnA4Oq" name="StereoDelay.h" compile="0" resource="0" file="Source/StereoDelay.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
