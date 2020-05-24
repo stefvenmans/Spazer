@@ -204,25 +204,18 @@ AudioProcessorEditor* SpazerAudioProcessor::createEditor()
 //==============================================================================
 void SpazerAudioProcessor::getStateInformation (MemoryBlock& destData)
 {
-//    Array<float> userData;
-//    userData.add(1.0);
-//    MemoryOutputStream(destData,true).write((void*)&userData, sizeof(userData));
-//    std::cout << "size of cpp : " << sizeof(userData) << std::endl;
-//    std::cout << "size of juce : " << userData.size() << std::endl;
+
 }
 
 void SpazerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-//    Array<float> userData;
-//    std::cout << "number of bytes : " << sizeInBytes << std::endl;
-//    MemoryInputStream(data,static_cast<size_t>(sizeInBytes), false).read((void*)&userData, sizeInBytes);
-//    std::cout << "saved value: " << userData.getFirst() << std::endl;
+
 }
 
 //Callback from value tree
 void SpazerAudioProcessor::valueTreePropertyChanged(ValueTree &treeWhosePropertyHasChanged, const Identifier &property)
 {
-    //std::cout << "value changed " << mAPVTS.getParameter(property)->getValue() << std::endl;
+    
 }
 
 //Parameter callback from valuetree
